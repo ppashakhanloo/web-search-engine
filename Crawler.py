@@ -88,7 +88,7 @@ for doc in incomplete_json_docs:
     all_doc_ids.append(doc['id'])
 
 counter = 0
-while counter < 11:
+while counter < 20:
     json_doc = incomplete_json_docs.pop(0)
     pUid = json_doc['id']
     cite_referee = 'https://www.researchgate.net/publicliterature.PublicationIncomingCitationsList.html?publicationUid=' + str(
@@ -113,13 +113,23 @@ while counter < 11:
     # retrieve citations
     citations = json.loads(cite_req.text)['result']['data']['citationItems']
     cites = []
-    for article in citations:
-        cites.append(article['data']['publicationUid'])
 
-        if not article['data']['publicationUid'] in all_doc_ids:
-            all_doc_ids.append(article['data']['publicationUid'])
-            new_json_doc = extracxt_json_doc(article)
-            incomplete_json_docs.append(new_json_doc)
+    if len(citations) > 0:
+        more_cite_referee = 'https://www.researchgate.net/publicliterature.PublicationIncomingCitationsList.html?publicationUid=' + str(
+            pUid) + '&usePlainButton=0&useEnrichedContext=1&swapJournalAndAuthorPositions=1&showAbstract=1&showOpenReviewButton=0&showDownloadButton=0&showType=0&showPublicationPreview=0&showEnrichedPublicationItem=1&publicationUid=' + str(
+            pUid) + '&limit=10&offset=3'
+        headers = {'accept': 'application/json', 'x-requested-with': 'XMLHttpRequest'}
+        more_cite_req = requests.get(more_cite_referee, headers=headers)
+
+        citations.extend(json.loads(more_cite_req.text)['result']['data']['citationItems'][:10 - len(citations)])
+
+        for article in citations:
+            cites.append(article['data']['publicationUid'])
+
+            if not article['data']['publicationUid'] in all_doc_ids:
+                all_doc_ids.append(article['data']['publicationUid'])
+                new_json_doc = extracxt_json_doc(article)
+                incomplete_json_docs.append(new_json_doc)
 
     json_doc['references'] = refs
     json_doc['citations'] = cites
