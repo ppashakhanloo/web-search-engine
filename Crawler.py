@@ -4,7 +4,6 @@ import requests
 from pprint import pprint
 from bs4 import BeautifulSoup
 
-
 def initialize_queue():
 	url = "http://www.researchgate.net/researcher/8159937_Zoubin_Ghahramani"
 	initial_page = requests.get(url)
@@ -51,6 +50,11 @@ def extracxt_json_doc(article):
 	return json_item
 
 
+def save_json_to_file(json_item, filename_convention):
+	with open(str(json_item[filename_convention]), 'w') as f:
+		json.dump(json_item, f, ensure_ascii=False)
+
+
 MAX_INIT_DOCS = 10
 MAX_DOCS = 1000
 all_doc_ids = []
@@ -62,7 +66,7 @@ for doc in incomplete_json_docs:
 	all_doc_ids.append(doc['id'])
 
 counter = 0
-while counter < 20:
+while counter < 10:
 	json_doc = incomplete_json_docs.pop(0)
 	pUid = json_doc['id']	
 	cite_referee = 'https://www.researchgate.net/publicliterature.PublicationIncomingCitationsList.html?publicationUid='+str(pUid)+'&usePlainButton=false&showEnrichedPublicationItem=true&useEnrichedContext=true&showAbstract=true&showType=false&showDownloadButton=false&showOpenReviewButton=false&showPublicationPreview=false&swapJournalAndAuthorPositions=true'
@@ -96,6 +100,10 @@ while counter < 20:
 	json_doc['references'] = refs
 	json_doc['citations'] = cites
 	final_json_docs.append(json_doc)
+
+	# save each completed json to a file
+	save_json_to_file(json_doc, 'id')
+
 	counter += 1
 
 for doc in final_json_docs:
