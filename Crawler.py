@@ -1,4 +1,5 @@
 import json
+import time
 import requests
 from pprint import pprint
 from bs4 import BeautifulSoup
@@ -51,7 +52,7 @@ def extracxt_json_doc(article):
 
 
 def save_json_to_file(json_item, filename_convention):
-    with open(str(json_item[filename_convention]), 'w') as f:
+    with open(str(json_item[filename_convention]), 'w', encoding='utf-8') as f:
         json.dump(json_item, f, ensure_ascii=False)
 
 
@@ -74,7 +75,7 @@ def load_queue_from_log():
 
 
 MAX_INIT_DOCS = 10
-MAX_DOCS = 12
+MAX_DOCS = 1000 + 50
 all_doc_ids = []
 
 # create the file for logging the frontier
@@ -88,6 +89,7 @@ for doc in incomplete_json_docs:
     all_doc_ids.append(doc['id'])
 
 counter = 0
+now = time.time()
 while len(final_json_docs) < MAX_DOCS:
     try:
         print('I am working fine...' + str(len(final_json_docs)))
@@ -149,6 +151,9 @@ while len(final_json_docs) < MAX_DOCS:
     # if connection was not OK, continue the loop, do not panic!
     except ConnectionError:
         print('I am idle -- waiting for connection...')
+later = time.time()
+
+print("All crawling took " + str(int(later-now)) + " onerous seconds.")
 
 #for doc in final_json_docs:
 #    print(doc['id'])
