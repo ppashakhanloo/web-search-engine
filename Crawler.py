@@ -74,7 +74,7 @@ def load_queue_from_log():
 
 
 MAX_INIT_DOCS = 10
-MAX_DOCS = 1000
+MAX_DOCS = 12
 all_doc_ids = []
 
 # create the file for logging the frontier
@@ -88,66 +88,71 @@ for doc in incomplete_json_docs:
     all_doc_ids.append(doc['id'])
 
 counter = 0
-while counter < 20:
-    json_doc = incomplete_json_docs.pop(0)
-    pUid = json_doc['id']
-    cite_referee = 'https://www.researchgate.net/publicliterature.PublicationIncomingCitationsList.html?publicationUid=' + str(
-        pUid) + '&usePlainButton=false&showEnrichedPublicationItem=true&useEnrichedContext=true&showAbstract=true&showType=false&showDownloadButton=false&showOpenReviewButton=false&showPublicationPreview=false&swapJournalAndAuthorPositions=true'
-    ref_referee = 'https://www.researchgate.net/publicliterature.PublicationCitationsList.html?publicationUid=' + str(
-        pUid) + '&usePlainButton=false&showEnrichedPublicationItem=true&showAbstract=true&showType=false&showDownloadButton=false&showOpenReviewButton=false&showPublicationPreview=false&swapJournalAndAuthorPositions=true'
-    headers = {'accept': 'application/json', 'x-requested-with': 'XMLHttpRequest'}
-    cite_req = requests.get(cite_referee, headers=headers)
-    ref_req = requests.get(ref_referee, headers=headers)
-
-    # retrieve references
-    references = json.loads(ref_req.text)['result']['data']['citationItems']
-    refs = []
-    for article in references:
-        refs.append(article['data']['publicationUid'])
-
-        if not article['data']['publicationUid'] in all_doc_ids:
-            all_doc_ids.append(article['data']['publicationUid'])
-            new_json_doc = extracxt_json_doc(article)
-            incomplete_json_docs.append(new_json_doc)
-
-    # retrieve citations
-    citations = json.loads(cite_req.text)['result']['data']['citationItems']
-    cites = []
-
-    if len(citations) > 0:
-        more_cite_referee = 'https://www.researchgate.net/publicliterature.PublicationIncomingCitationsList.html?publicationUid=' + str(
-            pUid) + '&usePlainButton=0&useEnrichedContext=1&swapJournalAndAuthorPositions=1&showAbstract=1&showOpenReviewButton=0&showDownloadButton=0&showType=0&showPublicationPreview=0&showEnrichedPublicationItem=1&publicationUid=' + str(
-            pUid) + '&limit=10&offset=3'
+while len(final_json_docs) < MAX_DOCS:
+    try:
+        print('I am working fine...' + str(len(final_json_docs)))
+        json_doc = incomplete_json_docs.pop(0)
+        pUid = json_doc['id']
+        cite_referee = 'https://www.researchgate.net/publicliterature.PublicationIncomingCitationsList.html?publicationUid=' + str(
+            pUid) + '&usePlainButton=false&showEnrichedPublicationItem=true&useEnrichedContext=true&showAbstract=true&showType=false&showDownloadButton=false&showOpenReviewButton=false&showPublicationPreview=false&swapJournalAndAuthorPositions=true'
+        ref_referee = 'https://www.researchgate.net/publicliterature.PublicationCitationsList.html?publicationUid=' + str(
+            pUid) + '&usePlainButton=false&showEnrichedPublicationItem=true&showAbstract=true&showType=false&showDownloadButton=false&showOpenReviewButton=false&showPublicationPreview=false&swapJournalAndAuthorPositions=true'
         headers = {'accept': 'application/json', 'x-requested-with': 'XMLHttpRequest'}
-        more_cite_req = requests.get(more_cite_referee, headers=headers)
+        cite_req = requests.get(cite_referee, headers=headers)
+        ref_req = requests.get(ref_referee, headers=headers)
 
-        citations.extend(json.loads(more_cite_req.text)['result']['data']['citationItems'][:10 - len(citations)])
-
-        for article in citations:
-            cites.append(article['data']['publicationUid'])
+        # retrieve references
+        references = json.loads(ref_req.text)['result']['data']['citationItems']
+        refs = []
+        for article in references:
+            refs.append(article['data']['publicationUid'])
 
             if not article['data']['publicationUid'] in all_doc_ids:
                 all_doc_ids.append(article['data']['publicationUid'])
                 new_json_doc = extracxt_json_doc(article)
                 incomplete_json_docs.append(new_json_doc)
 
-    json_doc['references'] = refs
-    json_doc['citations'] = cites
-    final_json_docs.append(json_doc)
+        # retrieve citations
+        citations = json.loads(cite_req.text)['result']['data']['citationItems']
+        cites = []
 
-    # save each completed json to a file
-    save_json_to_file(json_doc, 'id')
+        if len(citations) > 0:
+            more_cite_referee = 'https://www.researchgate.net/publicliterature.PublicationIncomingCitationsList.html?publicationUid=' + str(
+                pUid) + '&usePlainButton=0&useEnrichedContext=1&swapJournalAndAuthorPositions=1&showAbstract=1&showOpenReviewButton=0&showDownloadButton=0&showType=0&showPublicationPreview=0&showEnrichedPublicationItem=1&publicationUid=' + str(
+                pUid) + '&limit=10&offset=3'
+            headers = {'accept': 'application/json', 'x-requested-with': 'XMLHttpRequest'}
+            more_cite_req = requests.get(more_cite_referee, headers=headers)
 
-    # save the current frontier for the catastrophic case!
-    # every 10 json_item
-    if counter % 10 == 0:
-        log_frontier_queue(log_frontier)
+            citations.extend(json.loads(more_cite_req.text)['result']['data']['citationItems'][:10 - len(citations)])
 
-    counter += 1
+            for article in citations:
+                cites.append(article['data']['publicationUid'])
 
-for doc in final_json_docs:
-    print(doc['id'])
-    print(doc['title'])
-    print(doc['authors'])
-    print(doc['references'])
-    print(doc['citations'])
+                if not article['data']['publicationUid'] in all_doc_ids:
+                    all_doc_ids.append(article['data']['publicationUid'])
+                    new_json_doc = extracxt_json_doc(article)
+                    incomplete_json_docs.append(new_json_doc)
+
+        json_doc['references'] = refs
+        json_doc['citations'] = cites
+        final_json_docs.append(json_doc)
+
+        # save each completed json to a file
+        save_json_to_file(json_doc, 'id')
+
+        # save the current frontier for the catastrophic case!
+        # every 10 json_item
+        if counter % 10 == 0:
+            log_frontier_queue(log_frontier)
+
+        counter += 1
+    # if connection was not OK, continue the loop, do not panic!
+    except ConnectionError:
+        print('I am idle -- waiting for connection...')
+
+#for doc in final_json_docs:
+#    print(doc['id'])
+#    print(doc['title'])
+#    print(doc['authors'])
+#    print(doc['references'])
+#    print(doc['citations'])
