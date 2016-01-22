@@ -154,6 +154,11 @@ while len(final_json_docs) < MAX_DOCS:
     # if format was json incompatible
     except KeyError:
         print('Skip an incompatible page...')
+    except requests.exceptions.SSLError:
+        print('I am recovering from and SSL error...')
+    except BaseException:
+        print('Another exception occured -- but I am still trying...')
+
 
 later = time.time()
 
