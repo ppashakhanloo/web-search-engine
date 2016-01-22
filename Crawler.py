@@ -151,6 +151,10 @@ while len(final_json_docs) < MAX_DOCS:
     # if connection was not OK, continue the loop, do not panic!
     except ConnectionError:
         print('I am idle -- waiting for connection...')
+    # if format was json incompatible
+    except KeyError:
+        print('Skip an incompatible page...')
+
 later = time.time()
 
 print("All crawling took " + str(int(later-now)) + " onerous seconds.")
