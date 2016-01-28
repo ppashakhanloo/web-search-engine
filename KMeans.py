@@ -1,10 +1,10 @@
 import os
-import json
 import re
-import random
-import numpy
-from itertools import repeat
 import math
+import json
+import numpy
+import random
+from itertools import repeat
 import matplotlib.pyplot as plt
 
 
@@ -34,7 +34,7 @@ dictionary = []  # term
 doc_vectors = {}  # (docID -> {})
 term_df = {}  # (term -> df)
 
-STOP_LIST = ['discussion', 'not', 'these', 'our', 'paper', 'can', 'show', 'shows', 'I','a','about','an','are','as', 'article', 'at', 'be', 'by', 'com', 'for', 'from','how','in', 'is', 'it', 'of', 'on', 'or', 'that', 'this','to', 'was','what','when','where','who', 'will', 'with','the','www', 'and', 'we']
+STOP_LIST = ['been', 'discussion', 'not', 'these', 'our', 'paper', 'can', 'show', 'shows', 'I','a','about','an','are','as', 'article', 'at', 'be', 'by', 'com', 'for', 'from','how','in', 'is', 'it', 'of', 'on', 'or', 'that', 'this','to', 'was','what','when','where','who', 'will', 'with','the','www', 'and', 'we']
 
 
 def create_vector_space(dictionary):
@@ -246,6 +246,12 @@ def label_clusters(clustering_results, K):
     output_terms = list()
     for sel in selected_terms:
         output_terms.append(sel[:3])
+
+    # save output terms in file
+    with open('cluster_label.txt', 'w', encoding='utf-8') as f:
+        f.write(str(len(output_terms)) + '\n') # num of clusters
+        for t in output_terms:
+            f.write(' '.join(t) + '\n') # names for each cluster (per line)
 
     return output_terms
 
