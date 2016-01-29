@@ -35,7 +35,7 @@ dictionary = []  # term
 doc_vectors = {}  # (docID -> {})
 term_df = {}  # (term -> df)
 
-STOP_LIST = ['been', 'discussion', 'not', 'these', 'our', 'paper', 'can', 'show', 'shows', 'I','a','about','an','are','as', 'article', 'at', 'be', 'by', 'com', 'for', 'from','how','in', 'is', 'it', 'of', 'on', 'or', 'that', 'this','to', 'was','what','when','where','who', 'will', 'with','the','www', 'and', 'we']
+STOP_LIST = ['which', 'la', 'de', 'been', 'discussion', 'not', 'these', 'our', 'paper', 'can', 'show', 'shows', 'I','a','about','an','are','as', 'article', 'at', 'be', 'by', 'com', 'for', 'from','how','in', 'is', 'it', 'of', 'on', 'or', 'that', 'this','to', 'was','what','when', 'were', 'where','who', 'will', 'with','the','www', 'and', 'we']
 
 
 def create_vector_space(dictionary):
@@ -143,9 +143,10 @@ def apply_k_means(K, threshold):
     iters = 0
     time2 = 0
     while j == 0 or j - new_j > threshold:
-        iters += 4
+        iters += 3
         time2 = (100*iters) / 50
-        sys.stdout.write("\r%d%% of k-means has gone forward..." % time2)
+        if time2 < 100:
+            sys.stdout.write("\r%d%% of k-means has gone forward..." % time2)
         clustering_result = [[] for l in repeat(None, K)]
         for v in doc_vectors:
             norm_vec = numpy.linalg.norm(doc_vectors.get(v))
@@ -280,8 +281,8 @@ def label_clusters(clustering_results, K):
 
     print('selected names:')
     clus_nums = 1
-    for name in selected_terms:
-        print('cluster #' + clus_nums + ' ' + ' '.join(name))
+    for name in output_terms:
+        print('cluster #' + str(clus_nums) + ' ' + ' '.join(name))
         clus_nums += 1
     print()
 
@@ -311,6 +312,6 @@ clus_res, cent = apply_k_means(K=7, threshold=0.0001)
 #print(dictionary)
 #print(sorted(term_df, key=term_df.get, reverse=True))
 #add_cluster_nums_to_docs(clus_res)
-#sel_terms = label_clusters(clus_res, K=7)
+sel_terms = label_clusters(clus_res, K=7)
 #ks, js = compare(2, 15, 0.0001)
 #plot(ks, js, 'K', 'Residual sum of squares', '')
