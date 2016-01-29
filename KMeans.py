@@ -141,12 +141,9 @@ def apply_k_means(K, threshold):
     j = 0
     new_j = 0
     iters = 0
-    time2 = 0
     while j == 0 or j - new_j > threshold:
-        iters += 3
-        time2 = (100*iters) / 50
-        if time2 < 100:
-            sys.stdout.write("\r%d%% of k-means has gone forward..." % time2)
+        iters += 1
+        print('iteration #' + str(iters))
         clustering_result = [[] for l in repeat(None, K)]
         for v in doc_vectors:
             norm_vec = numpy.linalg.norm(doc_vectors.get(v))
@@ -173,8 +170,13 @@ def apply_k_means(K, threshold):
             cluster_centroids[l] = res
         j = new_j
         new_j = compute_j(clustering_result, cluster_centroids, K)
-    sys.stdout.write("\r%d%% of k-means has gone forward..." % 100)
-    print()
+
+    print('clustering statistics:')
+    clus_num = 1
+    for res in clustering_result:
+        print('cluster #' + str(clus_num) + ': ' + str(len(res)) + ' docs')
+        clus_num += 1
+
     return clustering_result, cluster_centroids
 
 
@@ -304,7 +306,6 @@ def plot(x, y, x_title, y_title, title):
     plt.ylabel(y_title, color='red')
     plt.grid(True)
     plt.show()
-
 
 # main
 dictionary = create_vector_space(dictionary)
