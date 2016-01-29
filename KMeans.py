@@ -1,5 +1,6 @@
 import os
 import re
+import sys
 import math
 import json
 import numpy
@@ -41,9 +42,12 @@ def create_vector_space(dictionary):
     path = "json_items/"
     N = len(os.listdir(path))
 
-    print('creating dictionary...')
+    time = 0
+    print('creating the vector space...')
     # create dictionary and df
     for file in os.listdir(path):
+        time += 1
+        sys.stdout.write("\r%d/%d files processed" % (time, len(os.listdir(path))))
         json_data = open(path + '/' + file.title(), encoding='utf8').read()
         doc = json.loads(json_data)
 
@@ -70,14 +74,19 @@ def create_vector_space(dictionary):
             elif term not in STOP_LIST:
                 term_df.update({term: term_df.get(term) + 1})
 
+        sys.stdout.flush()
+    print()
     # sort the dictionary
     dictionary = list(sorted(dictionary))
-    print('dictionary:')
-    print(dictionary)
 
-    print('calculate tf-idf...')
+    print('calculating tf-idf...')
+    time2 = 0
+    files = 0
     # obtain file statistics - tf
     for file in os.listdir(path):
+        files += 1
+        time2 = (100*files) / len(os.listdir(path))
+        sys.stdout.write("\r%d%% of vectors created..." % time2)
         json_data = open(path + '/' + file.title(), encoding='utf-8').read()
         doc = json.loads(json_data)
         doc_content = ' '.join([str(doc['abstract']).lower(), str(doc['title']).lower()]).replace('\\n', ' ').replace(
@@ -99,10 +108,15 @@ def create_vector_space(dictionary):
             doc_vector[i] *= df
 
         doc_vectors.update({doc['id']: doc_vector})
-
+        sys.stdout.flush()
+    print()
+    doc_num = 0
     print('normalizing vectors...')
     # normalize vectors
     for vector in doc_vectors:
+        doc_num += 1
+        time2 = (100*doc_num) / len(doc_vectors)
+        sys.stdout.write("\r%d%% of vectors normalized..." % time2)
         ss = 0.0
         curr_vec = doc_vectors.get(vector)
         for i in range(len(curr_vec)):
@@ -111,12 +125,13 @@ def create_vector_space(dictionary):
         ss = numpy.sqrt(ss)
         for i in range(len(curr_vec)):
             curr_vec[i] /= ss
-
+        sys.stdout.flush()
+    print()
     return dictionary
 
 
 def apply_k_means(K, threshold):
-
+    print('applying k-means with k=' + str(K) + '...')
     # choose initial k random vectors among all doc-vectors
     cluster_centroids = []
     for k in range(K):
@@ -125,7 +140,12 @@ def apply_k_means(K, threshold):
     clustering_result = [[] for l in repeat(0, K)]
     j = 0
     new_j = 0
+    iters = 0
+    time2 = 0
     while j == 0 or j - new_j > threshold:
+        iters += 4
+        time2 = (100*iters) / 50
+        sys.stdout.write("\r%d%% of k-means has gone forward..." % time2)
         clustering_result = [[] for l in repeat(None, K)]
         for v in doc_vectors:
             norm_vec = numpy.linalg.norm(doc_vectors.get(v))
@@ -150,10 +170,10 @@ def apply_k_means(K, threshold):
                 res[p] /= float(n)
 
             cluster_centroids[l] = res
-
         j = new_j
         new_j = compute_j(clustering_result, cluster_centroids, K)
-
+    sys.stdout.write("\r%d%% of k-means has gone forward..." % 100)
+    print()
     return clustering_result, cluster_centroids
 
 
@@ -200,11 +220,11 @@ def add_cluster_nums_to_docs(clustering_result):
 
 # cluster labeling
 def label_clusters(clustering_results, K):
-    print('naming clusters...')
+    print('trying to extract meaningful names...')
     # store some most important terms of each cluster
     selected_terms = list()
     n = len(doc_vectors)
-
+    sys.stdout.write("\r%d%%" % 1)
     # create a matrix
     # one row for each cluster, one column for each term, df goes in elements
     cluster_tf_df = [[0 for x in range(len(dictionary))] for x in range(len(clustering_results))]
@@ -213,8 +233,13 @@ def label_clusters(clustering_results, K):
             for element in range(len(doc_vectors.get(clustering_results[cluster][vector]))):
                 if doc_vectors.get(clustering_results[cluster][vector])[element] > 0:
                     cluster_tf_df[cluster][element] += 1
+    sys.stdout.write("\r%d%%" % 10)
 
+    clus_nums = 0
     for cluster in range(len(clustering_results)):
+        clus_nums += 1
+        time = ((100*clus_nums) / len(clustering_results))
+        sys.stdout.write("\r%d%%" % time)
         i_ct = dict()
         for element in range(len(dictionary)):
             n11 = cluster_tf_df[cluster][element]
@@ -242,7 +267,7 @@ def label_clusters(clustering_results, K):
             i_ct.update({dictionary[element]: I})
 
         selected_terms.append(sorted(i_ct, key=i_ct.get, reverse=True))
-
+    print()
     output_terms = list()
     for sel in selected_terms:
         output_terms.append(sel[:3])
@@ -252,6 +277,13 @@ def label_clusters(clustering_results, K):
         f.write(str(len(output_terms)) + '\n') # num of clusters
         for t in output_terms:
             f.write(' '.join(t) + '\n') # names for each cluster (per line)
+
+    print('selected names:')
+    clus_nums = 1
+    for name in selected_terms:
+        print('cluster #' + clus_nums + ' ' + ' '.join(name))
+        clus_nums += 1
+    print()
 
     return output_terms
 
@@ -275,18 +307,10 @@ def plot(x, y, x_title, y_title, title):
 
 # main
 dictionary = create_vector_space(dictionary)
-print('vector space created...')
 clus_res, cent = apply_k_means(K=7, threshold=0.0001)
-print('k-means applied...')
-for res in clus_res:
-    print(res)
-#print('==============dict========================')
 #print(dictionary)
 #print(sorted(term_df, key=term_df.get, reverse=True))
-
 #add_cluster_nums_to_docs(clus_res)
-sel_terms = label_clusters(clus_res, K=7)
-print('clusters labeled...')
-print(sel_terms)
-#ks, js = compare(2, 15, 0.00001)
+#sel_terms = label_clusters(clus_res, K=7)
+#ks, js = compare(2, 15, 0.0001)
 #plot(ks, js, 'K', 'Residual sum of squares', '')
